@@ -22,6 +22,9 @@ def control():
         pyautogui.click(button='right')
     elif action == 'type':
         pyautogui.write(data['text'])
+    elif action == 'key':
+        # Handle special keys: backspace, enter, tab, escape, arrows, etc.
+        pyautogui.press(data['key'])
 
     return {"status": "success"}
 
