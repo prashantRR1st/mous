@@ -1,5 +1,6 @@
 from flask import Flask, request
-# import socket
+import socket
+import threading
 import pyautogui
 
 app = Flask(__name__)
@@ -7,14 +8,31 @@ app = Flask(__name__)
 # Disable failsafe to prevent script from stopping if mouse hits a corner
 pyautogui.FAILSAFE = False
 
+# UDP for low-latency mouse movement
+UDP_PORT = 5005
+
+def udp_listener():
+    """Handle mouse movement over UDP for minimal latency."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(('0.0.0.0', UDP_PORT))
+    print(f"UDP listener started on port {UDP_PORT}")
+
+    while True:
+        data, addr = sock.recvfrom(1024)
+        try:
+            # Expected format: "dx,dy"
+            dx, dy = map(float, data.decode('utf-8').split(','))
+            pyautogui.moveRel(dx, dy)
+        except:
+            pass
+
 @app.route('/control', methods=['POST'])
 def control():
     data = request.json
-    print(f"data: {data}")
     action = data.get('action')
 
     if action == 'move':
-        # Moves mouse relative to current position
+        # Fallback HTTP move (UDP preferred)
         pyautogui.moveRel(data['x'], data['y'])
     elif action == 'left_click':
         pyautogui.click(button='left')
@@ -23,31 +41,15 @@ def control():
     elif action == 'type':
         pyautogui.write(data['text'])
     elif action == 'key':
-        # Handle special keys: backspace, enter, tab, escape, arrows, etc.
         pyautogui.press(data['key'])
 
     return {"status": "success"}
 
 if __name__ == '__main__':
-    # '0.0.0.0' allows iPhone to find the computer on the local network
+    # Start UDP listener in background thread
+    udp_thread = threading.Thread(target=udp_listener, daemon=True)
+    udp_thread.start()
+
+    # Start Flask for HTTP commands (clicks, keyboard)
+    print("Flask server starting on port 5050")
     app.run(host='0.0.0.0', port=5050)
-
-# # Set up the server
-# UDP_IP = "0.0.0.0" # Listen on all network interfaces
-# UDP_PORT = 5005
-# sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP is faster for mouse movement
-# sock.bind((UDP_IP, UDP_PORT))
-
-# print(f"Server started. Point your iPhone to port {UDP_PORT}")
-
-# while True:
-#     data, addr = sock.recvfrom(1024) # buffer_size  = 1024b
-#     message = data.decode('utf-8')
-
-#     try:
-#         # Expected data format: "dx,dy"
-#         dx, dy = map(float, message.split(','))
-#         pyautogui.moveRel(dx,dy) # move relative to current position
-#     except:
-#         pass
-        
