@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+
+# Python
+__pycache__/
+*.py[cod]
+.mypy_cache/
+venv/
+.env
+
+# Node (if any)
+node_modules/
+package-lock.json
+
+# IDE
+.helix/
+.vscode/
+.idea/
