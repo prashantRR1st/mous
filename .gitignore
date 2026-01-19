@@ -21,6 +21,9 @@ __pycache__/
 venv/
 .env
 
+# Auth secret
+.secret
+
 # Node (if any)
 node_modules/
 package-lock.json

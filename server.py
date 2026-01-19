@@ -1,6 +1,8 @@
 from flask import Flask, request
 import socket
 import threading
+import secrets
+import os
 import pyautogui
 from Quartz.CoreGraphics import (
     CGEventCreateMouseEvent,
@@ -13,6 +15,25 @@ from Quartz.CoreGraphics import (
 )
 
 app = Flask(__name__)
+
+# Authentication
+SECRET_FILE = os.path.join(os.path.dirname(__file__), '.secret')
+
+def load_or_generate_secret():
+    if os.path.exists(SECRET_FILE):
+        with open(SECRET_FILE, 'r') as f:
+            return f.read().strip()
+    else:
+        secret = secrets.token_hex(16)
+        with open(SECRET_FILE, 'w') as f:
+            f.write(secret)
+        print(f"\n{'='*50}")
+        print(f"Generated new secret: {secret}")
+        print(f"Add this to your iOS app's NetworkManager.swift")
+        print(f"{'='*50}\n")
+        return secret
+
+SECRET = load_or_generate_secret()
 
 # Disable failsafe to prevent script from stopping if mouse hits a corner
 pyautogui.FAILSAFE = False
@@ -51,14 +72,22 @@ def udp_listener():
     while True:
         data, addr = sock.recvfrom(1024)
         try:
-            # Expected format: "dx,dy"
-            dx, dy = map(float, data.decode('utf-8').split(','))
+            # Expected format: "secret:dx,dy"
+            message = data.decode('utf-8')
+            token, coords = message.split(':', 1)
+            if token != SECRET:
+                continue  # Ignore unauthorized packets
+            dx, dy = map(float, coords.split(','))
             move_mouse_quartz(dx, dy)
         except:
             pass
 
 @app.route('/control', methods=['POST'])
 def control():
+    # Check authentication
+    if request.headers.get('X-Auth-Token') != SECRET:
+        return {"status": "unauthorized"}, 401
+
     data = request.json
     action = data.get('action')
 

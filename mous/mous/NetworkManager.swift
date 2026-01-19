@@ -16,6 +16,9 @@ class NetworkManager {
     private let httpPort = 5050
     private let udpPort: UInt16 = 5005
 
+    // Authentication - paste the secret from server's .secret file
+    private let authSecret = "PASTE_YOUR_SECRET_HERE"
+
     // UDP connection for low-latency mouse movement
     private var udpConnection: NWConnection?
     private let udpQueue = DispatchQueue(label: "com.mous.udp")
@@ -42,8 +45,8 @@ class NetworkManager {
     // MARK: - Mouse Movement (UDP - immediate, no buffering)
 
     func sendMove(x: CGFloat, y: CGFloat) {
-        // Send immediately - no accumulation, no timer
-        let message = "\(x),\(y)"
+        // Send immediately - format: "secret:dx,dy"
+        let message = "\(authSecret):\(x),\(y)"
         if let data = message.data(using: .utf8) {
             udpConnection?.send(content: data, completion: .contentProcessed({ _ in }))
         }
@@ -61,6 +64,7 @@ class NetworkManager {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(authSecret, forHTTPHeaderField: "X-Auth-Token")
         request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
         request.timeoutInterval = 1.0
 
