@@ -2,6 +2,15 @@ from flask import Flask, request
 import socket
 import threading
 import pyautogui
+from Quartz.CoreGraphics import (
+    CGEventCreateMouseEvent,
+    CGEventPost,
+    CGEventCreate,
+    CGEventGetLocation,
+    kCGEventMouseMoved,
+    kCGMouseButtonLeft,
+    kCGHIDEventTap,
+)
 
 app = Flask(__name__)
 
@@ -9,6 +18,26 @@ app = Flask(__name__)
 pyautogui.FAILSAFE = False
 # Disable the default 0.1 second pause between actions
 pyautogui.PAUSE = 0
+
+
+def move_mouse_quartz(dx, dy):
+    """Move mouse using Quartz directly - faster than pyautogui."""
+    # Get current mouse position
+    event = CGEventCreate(None)
+    current = CGEventGetLocation(event)
+
+    # Calculate new position
+    new_x = current.x + dx
+    new_y = current.y + dy
+
+    # Create and post mouse move event
+    move_event = CGEventCreateMouseEvent(
+        None,
+        kCGEventMouseMoved,
+        (new_x, new_y),
+        kCGMouseButtonLeft
+    )
+    CGEventPost(kCGHIDEventTap, move_event)
 
 # UDP for low-latency mouse movement
 UDP_PORT = 5005
@@ -24,7 +53,7 @@ def udp_listener():
         try:
             # Expected format: "dx,dy"
             dx, dy = map(float, data.decode('utf-8').split(','))
-            pyautogui.moveRel(dx, dy)
+            move_mouse_quartz(dx, dy)
         except:
             pass
 
