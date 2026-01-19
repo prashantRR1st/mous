@@ -7,6 +7,8 @@ app = Flask(__name__)
 
 # Disable failsafe to prevent script from stopping if mouse hits a corner
 pyautogui.FAILSAFE = False
+# Disable the default 0.1 second pause between actions
+pyautogui.PAUSE = 0
 
 # UDP for low-latency mouse movement
 UDP_PORT = 5005
